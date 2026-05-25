@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test Upload</title>
+</head>
+
+<body>
+    <h2>Direct Upload Test for Property ID: 2</h2>
+
+    <form action="http://127.0.0.1:8000/owner/property/2/photos/upload" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+        <input type="file" name="photos[]" multiple>
+        <br><br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="result"></div>
+</body>
+
+</html>

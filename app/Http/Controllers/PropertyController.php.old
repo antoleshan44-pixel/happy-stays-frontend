@@ -1,0 +1,118 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Property;
+
+class PropertyController extends Controller
+{
+    // =========================
+    // OWNER / BASIC LISTING
+    // =========================
+    public function index()
+    {
+        $properties = Property::where('user_id', auth()->id())->get();
+        return view('properties.index', compact('properties'));
+    }
+
+    public function create()
+    {
+        return view('properties.create');
+    }
+
+    // =========================
+    // STORE PROPERTY (OWNER)
+    // =========================
+    public function store(Request $request)
+{
+    $request->validate([
+        'title' => 'required',
+        'description' => 'required',
+        'location' => 'required',
+        'price_per_night' => 'required|numeric',
+        'image' => 'nullable|image',
+    ]);
+
+    $imagePath = null;
+
+    if ($request->hasFile('image')) {
+        $imagePath = $request->file('image')->store('properties', 'public');
+    }
+
+    Property::create([
+        'user_id' => auth()->id(),
+        'title' => $request->title,
+        'description' => $request->description,
+        'location' => $request->location,
+        'price_per_night' => $request->price_per_night,
+        'image' => $imagePath,
+    ]);
+
+    return redirect('/owner/properties');
+}
+
+    // =========================
+    // PUBLIC LISTING (CUSTOMERS)
+    // =========================
+    public function publicIndex()
+    {
+        $properties = Property::latest()->get();
+        return view('properties.public-index', compact('properties'));
+    }
+
+    // =========================
+    // PROPERTY DETAILS
+    // =========================
+   public function show($id)
+{
+    $property = Property::findOrFail($id);
+
+    return view('properties.show', compact('property'));
+}
+
+    // =========================
+    // EDIT PROPERTY (OWNER)
+    // =========================
+    public function edit($id)
+    {
+        $property = Property::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        return view('properties.edit', compact('property'));
+    }
+
+    // =========================
+    // UPDATE PROPERTY
+    // =========================
+    public function update(Request $request, $id)
+    {
+        $property = Property::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $property->update($request->only([
+            'title',
+            'description',
+            'location',
+            'price_per_night'
+        ]));
+
+        return redirect('/dashboard');
+    }
+
+    // =========================
+    // DELETE PROPERTY
+    // =========================
+    public function destroy($id)
+    {
+        $property = Property::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $property->delete();
+
+        return redirect('/dashboard');
+    }
+}
