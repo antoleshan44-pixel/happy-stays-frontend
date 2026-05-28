@@ -161,7 +161,7 @@
                 @endif
 
                 <!-- Registration Form - Compact -->
-                <form method="POST" action="{{ url('/register') }}">
+                <form method="POST" action="{{ secure_url('/register') }}">
                     @csrf
 
                     <!-- Full Name -->

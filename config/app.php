@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://happy-stays-frontend.onrender.com'),
 
     /*
     |--------------------------------------------------------------------------
@@ -134,7 +134,7 @@ return [
     */
 
     'spring_boot' => [
-        'api_url' => env('SPRING_BOOT_API_URL', 'http://localhost:8080/api'),
+        'api_url' => env('SPRING_BOOT_API_URL', 'https://happy-stays-backend.onrender.com'),
         'timeout' => env('SPRING_BOOT_API_TIMEOUT', 30),
         'retry_times' => env('SPRING_BOOT_API_RETRY', 3),
     ],

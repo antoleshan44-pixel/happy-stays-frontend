@@ -145,7 +145,7 @@
                 @endif
 
                 <!-- Login Form -->
-                <form method="POST" action="{{ url('/login') }}">
+                <form method="POST" action="{{ secure_url('/login') }}">
                     @csrf
 
                     <!-- Email Field -->
