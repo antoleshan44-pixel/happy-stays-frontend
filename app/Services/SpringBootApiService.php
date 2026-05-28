@@ -14,7 +14,7 @@ class SpringBootApiService
 
     public function __construct()
     {
-        $this->baseUrl = env('SPRING_BOOT_API_URL', 'http://localhost:8080/api');
+        $this->baseUrl = rtrim(env('SPRING_BOOT_API_URL', env('BACKEND_API_URL', 'http://localhost:8080/api')), '/');
         Log::info('SpringBootApiService initialized', ['baseUrl' => $this->baseUrl]);
     }
 
