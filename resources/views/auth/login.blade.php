@@ -117,36 +117,27 @@
                     <p class="text-on-surface-variant text-xs mt-1">Sign in to continue</p>
                 </div>
 
-                <!-- Display Validation Errors -->
-                @if($errors->any())
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div class="flex items-start gap-2">
-                            <span class="material-symbols-outlined text-red-600 text-sm">error</span>
-                            <div class="flex-1">
-                                <p class="text-xs font-semibold text-red-800 mb-1">Unable to sign in</p>
-                                <ul class="text-xs text-red-700 list-disc list-inside">
-                                    @foreach($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
+                <!-- Error Container -->
+                <div id="errorContainer" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-red-600 text-sm">error</span>
+                        <div class="flex-1">
+                            <p class="text-xs font-semibold text-red-800 mb-1">Unable to sign in</p>
+                            <p id="errorMessage" class="text-xs text-red-700"></p>
                         </div>
                     </div>
-                @endif
+                </div>
 
                 <!-- Success Message (from registration) -->
-                @if(session('success'))
-                    <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
-                            <p class="text-xs text-green-700">{{ session('success') }}</p>
-                        </div>
+                <div id="successContainer" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
+                        <p id="successMessage" class="text-sm text-green-700"></p>
                     </div>
-                @endif
+                </div>
 
-                <!-- Login Form -->
-                <form method="POST" action="{{ secure_url('/login') }}">
-                    @csrf
+                <!-- Login Form - Direct API Call -->
+                <form id="loginForm" method="POST">
 
                     <!-- Email Field -->
                     <div class="mb-4">
@@ -154,7 +145,7 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">email</span>
                             </span>
-                            <input type="email" name="email" value="{{ old('email') }}" required
+                            <input type="email" name="email" id="email" required
                                    class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                    placeholder="Email Address"
                                    autofocus>
@@ -167,10 +158,9 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">lock</span>
                             </span>
-                            <input type="password" name="password" required
+                            <input type="password" name="password" id="password" required
                                    class="w-full pl-10 pr-10 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                   placeholder="Password"
-                                   id="password">
+                                   placeholder="Password">
                             <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-outline hover:text-primary transition-colors">
                                 <span class="material-symbols-outlined text-lg" id="toggleIcon">visibility_off</span>
                             </button>
@@ -180,14 +170,14 @@
                     <!-- Remember Me & Forgot Password -->
                     <div class="flex items-center justify-between mb-6">
                         <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" name="remember" class="w-3 h-3 text-primary rounded">
+                            <input type="checkbox" name="remember" id="remember" class="w-3 h-3 text-primary rounded">
                             <span class="ml-2 text-xs text-gray-600">Remember me</span>
                         </label>
                         <a href="#" class="text-xs text-primary hover:underline">Forgot password?</a>
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
+                    <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
                         Sign In
                     </button>
 
@@ -233,7 +223,18 @@
     </div>
 </div>
 
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-3"></div>
+        <p class="text-gray-700">Signing in...</p>
+    </div>
+</div>
+
 <script>
+    // Get the backend API URL from environment or use default
+    const BACKEND_API_URL = '{{ env("SPRING_BOOT_API_URL", "https://happy-stays-backend.onrender.com") }}';
+
     function togglePassword() {
         const passwordInput = document.getElementById('password');
         const toggleIcon = document.getElementById('toggleIcon');
@@ -247,6 +248,105 @@
         }
     }
 
+    // Helper function to show error
+    function showError(message) {
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        errorMessage.textContent = message;
+        errorContainer.classList.remove('hidden');
+        setTimeout(() => {
+            errorContainer.classList.add('hidden');
+        }, 5000);
+    }
+
+    // Helper function to show success
+    function showSuccess(message) {
+        const successContainer = document.getElementById('successContainer');
+        const successMessage = document.getElementById('successMessage');
+        successMessage.textContent = message;
+        successContainer.classList.remove('hidden');
+    }
+
+    // Handle form submission to Spring Boot API
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Clear previous errors
+        document.getElementById('errorContainer').classList.add('hidden');
+
+        // Get form data
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const remember = document.getElementById('remember').checked;
+
+        // Validate inputs
+        if (!email || !password) {
+            showError('Please enter both email and password');
+            return;
+        }
+
+        // Show loading spinner
+        document.getElementById('loadingSpinner').classList.remove('hidden');
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').textContent = 'Signing in...';
+
+        try {
+            const response = await fetch(`${BACKEND_API_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.token) {
+                // Store token and user data
+                if (remember) {
+                    localStorage.setItem('api_token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user || result));
+                } else {
+                    sessionStorage.setItem('api_token', result.token);
+                    sessionStorage.setItem('user', JSON.stringify(result.user || result));
+                }
+
+                // Also store in session for server-side access
+                sessionStorage.setItem('api_token', result.token);
+
+                // Show success message
+                showSuccess('Login successful! Redirecting to dashboard...');
+
+                // Redirect based on user role after 2 seconds
+                setTimeout(() => {
+                    const userRole = (result.user?.role || result.role || '').toUpperCase();
+                    if (userRole === 'OWNER') {
+                        window.location.href = '/owner/dashboard';
+                    } else if (userRole === 'ADMIN') {
+                        window.location.href = '/admin/dashboard';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 1500);
+            } else {
+                // Show error message from API
+                const errorMessage = result.message || result.error || 'Invalid email or password';
+                showError(errorMessage);
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showError('Connection error. Please check if the backend is running and try again.');
+        } finally {
+            document.getElementById('loadingSpinner').classList.add('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').textContent = 'Sign In';
+        }
+    });
+
     // Add focus effect to inputs
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
@@ -257,6 +357,12 @@
             this.parentElement.classList.remove('ring-2', 'ring-primary/20');
         });
     });
+
+    // Check if user was redirected from registration with success message
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('registered') === 'success') {
+        showSuccess('Account created successfully! Please sign in.');
+    }
 </script>
 
 </body>

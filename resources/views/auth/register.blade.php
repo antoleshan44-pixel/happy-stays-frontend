@@ -134,35 +134,26 @@
                 </div>
 
                 <!-- Display Validation Errors -->
-                @if($errors->any())
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div class="flex items-start gap-2">
-                            <span class="material-symbols-outlined text-red-600 text-sm">error</span>
-                            <div class="flex-1">
-                                <p class="text-xs font-semibold text-red-800 mb-1">Please fix the following errors:</p>
-                                <ul class="text-xs text-red-700 list-disc list-inside">
-                                    @foreach($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
+                <div id="errorContainer" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-red-600 text-sm">error</span>
+                        <div class="flex-1">
+                            <p class="text-xs font-semibold text-red-800 mb-1">Please fix the following errors:</p>
+                            <ul id="errorList" class="text-xs text-red-700 list-disc list-inside"></ul>
                         </div>
                     </div>
-                @endif
+                </div>
 
                 <!-- Success Message -->
-                @if(session('success'))
-                    <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
-                            <p class="text-xs text-green-700">{{ session('success') }}</p>
-                        </div>
+                <div id="successContainer" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
+                        <p id="successMessage" class="text-sm text-green-700"></p>
                     </div>
-                @endif
+                </div>
 
-                <!-- Registration Form - Compact -->
-                <form method="POST" action="{{ secure_url('/register') }}">
-                    @csrf
+                <!-- Registration Form - Direct API Call -->
+                <form id="registerForm" method="POST">
 
                     <!-- Full Name -->
                     <div class="mb-3">
@@ -170,13 +161,11 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">person</span>
                             </span>
-                            <input type="text" name="name" value="{{ old('name') }}" required
-                                   class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all @error('name') border-red-500 @enderror"
+                            <input type="text" name="name" id="name" required
+                                   class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                    placeholder="Full Name">
                         </div>
-                        @error('name')
-                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                        @enderror
+                        <p id="nameError" class="text-xs text-red-500 mt-1 hidden"></p>
                     </div>
 
                     <!-- Email Address -->
@@ -185,13 +174,11 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">email</span>
                             </span>
-                            <input type="email" name="email" value="{{ old('email') }}" required
-                                   class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all @error('email') border-red-500 @enderror"
+                            <input type="email" name="email" id="email" required
+                                   class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                    placeholder="Email Address">
                         </div>
-                        @error('email')
-                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                        @enderror
+                        <p id="emailError" class="text-xs text-red-500 mt-1 hidden"></p>
                     </div>
 
                     <!-- Phone Number -->
@@ -200,13 +187,11 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">call</span>
                             </span>
-                            <input type="tel" name="phone" value="{{ old('phone') }}" required
-                                   class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all @error('phone') border-red-500 @enderror"
+                            <input type="tel" name="phone" id="phone" required
+                                   class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                    placeholder="Phone Number">
                         </div>
-                        @error('phone')
-                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                        @enderror
+                        <p id="phoneError" class="text-xs text-red-500 mt-1 hidden"></p>
                     </div>
 
                     <!-- Password -->
@@ -215,17 +200,14 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">lock</span>
                             </span>
-                            <input type="password" name="password" required
-                                   class="w-full pl-10 pr-10 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all @error('password') border-red-500 @enderror"
-                                   placeholder="Password"
-                                   id="password">
+                            <input type="password" name="password" id="password" required
+                                   class="w-full pl-10 pr-10 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                   placeholder="Password">
                             <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-outline hover:text-primary transition-colors">
                                 <span class="material-symbols-outlined text-lg" id="toggleIcon">visibility_off</span>
                             </button>
                         </div>
-                        @error('password')
-                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                        @enderror
+                        <p id="passwordError" class="text-xs text-red-500 mt-1 hidden"></p>
                         <p class="text-xs text-gray-400 mt-0.5">Minimum 6 characters</p>
                     </div>
 
@@ -235,7 +217,7 @@
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
                                 <span class="material-symbols-outlined text-lg">verified</span>
                             </span>
-                            <input type="password" name="password_confirmation" required
+                            <input type="password" name="password_confirmation" id="password_confirmation" required
                                    class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                                    placeholder="Confirm Password">
                         </div>
@@ -246,7 +228,7 @@
                         <label class="block text-xs font-semibold mb-2 text-on-surface">I want to</label>
                         <div class="grid grid-cols-2 gap-3">
                             <label class="role-card relative flex cursor-pointer">
-                                <input type="radio" name="role" value="customer" {{ old('role') == 'customer' ? 'checked' : 'checked' }} class="peer sr-only">
+                                <input type="radio" name="role" value="CUSTOMER" checked class="peer sr-only" id="role_customer">
                                 <div class="w-full p-3 text-center rounded-xl border-2 peer-checked:border-primary peer-checked:bg-primary/5 transition-all cursor-pointer border-gray-200 bg-white hover:border-primary/50">
                                     <span class="material-symbols-outlined text-2xl block mx-auto mb-1 text-primary">search</span>
                                     <span class="text-xs font-semibold text-gray-800">Customer</span>
@@ -254,7 +236,7 @@
                                 </div>
                             </label>
                             <label class="role-card relative flex cursor-pointer">
-                                <input type="radio" name="role" value="owner" {{ old('role') == 'owner' ? 'checked' : '' }} class="peer sr-only">
+                                <input type="radio" name="role" value="OWNER" class="peer sr-only" id="role_owner">
                                 <div class="w-full p-3 text-center rounded-xl border-2 peer-checked:border-primary peer-checked:bg-primary/5 transition-all cursor-pointer border-gray-200 bg-white hover:border-primary/50">
                                     <span class="material-symbols-outlined text-2xl block mx-auto mb-1 text-primary">home_work</span>
                                     <span class="text-xs font-semibold text-gray-800">Owner</span>
@@ -262,13 +244,11 @@
                                 </div>
                             </label>
                         </div>
-                        @error('role')
-                            <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                        @enderror
+                        <p id="roleError" class="text-xs text-red-500 mt-1 hidden"></p>
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
+                    <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
                         Create Account
                     </button>
 
@@ -285,7 +265,18 @@
     </div>
 </div>
 
+<!-- Loading Spinner (hidden by default) -->
+<div id="loadingSpinner" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-3"></div>
+        <p class="text-gray-700">Creating account...</p>
+    </div>
+</div>
+
 <script>
+    // Get the backend API URL from environment or use default
+    const BACKEND_API_URL = '{{ env("SPRING_BOOT_API_URL", "https://happy-stays-backend.onrender.com") }}';
+
     function togglePassword() {
         const passwordInput = document.getElementById('password');
         const toggleIcon = document.getElementById('toggleIcon');
@@ -298,6 +289,152 @@
             toggleIcon.textContent = 'visibility_off';
         }
     }
+
+    // Helper function to show errors
+    function showError(message) {
+        const errorContainer = document.getElementById('errorContainer');
+        const errorList = document.getElementById('errorList');
+        errorList.innerHTML = `<li>${message}</li>`;
+        errorContainer.classList.remove('hidden');
+        setTimeout(() => {
+            errorContainer.classList.add('hidden');
+        }, 5000);
+    }
+
+    // Helper function to show success
+    function showSuccess(message) {
+        const successContainer = document.getElementById('successContainer');
+        const successMessage = document.getElementById('successMessage');
+        successMessage.textContent = message;
+        successContainer.classList.remove('hidden');
+    }
+
+    // Handle form submission to Spring Boot API
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Clear previous errors
+        document.getElementById('errorContainer').classList.add('hidden');
+        document.querySelectorAll('[id$="Error"]').forEach(el => {
+            el.classList.add('hidden');
+            el.textContent = '';
+        });
+
+        // Get form data
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            password: document.getElementById('password').value,
+            role: document.querySelector('input[name="role"]:checked').value,
+            password_confirmation: document.getElementById('password_confirmation').value
+        };
+
+        // Validate passwords match
+        if (formData.password !== formData.password_confirmation) {
+            const passwordError = document.getElementById('passwordError');
+            passwordError.textContent = 'Passwords do not match';
+            passwordError.classList.remove('hidden');
+            return;
+        }
+
+        // Validate password length
+        if (formData.password.length < 6) {
+            const passwordError = document.getElementById('passwordError');
+            passwordError.textContent = 'Password must be at least 6 characters';
+            passwordError.classList.remove('hidden');
+            return;
+        }
+
+        // Validate email
+        if (!formData.email.includes('@')) {
+            const emailError = document.getElementById('emailError');
+            emailError.textContent = 'Please enter a valid email address';
+            emailError.classList.remove('hidden');
+            return;
+        }
+
+        // Show loading spinner
+        document.getElementById('loadingSpinner').classList.remove('hidden');
+        document.getElementById('submitBtn').disabled = true;
+        document.getElementById('submitBtn').textContent = 'Creating Account...';
+
+        try {
+            const response = await fetch(`${BACKEND_API_URL}/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    password: formData.password,
+                    role: formData.role
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.token) {
+                // Store token and user data
+                localStorage.setItem('api_token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user || result));
+
+                // Also store in session for server-side access
+                sessionStorage.setItem('api_token', result.token);
+
+                // Show success message
+                showSuccess('Account created successfully! Redirecting to dashboard...');
+
+                // Redirect based on role after 2 seconds
+                setTimeout(() => {
+                    if (formData.role === 'OWNER') {
+                        window.location.href = '/owner/dashboard';
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 2000);
+            } else {
+                // Show error message from API
+                const errorMessage = result.message || result.error || 'Registration failed. Please try again.';
+
+                // Check for field-specific errors
+                if (result.errors) {
+                    if (result.errors.email) {
+                        const emailError = document.getElementById('emailError');
+                        emailError.textContent = result.errors.email[0];
+                        emailError.classList.remove('hidden');
+                    }
+                    if (result.errors.password) {
+                        const passwordError = document.getElementById('passwordError');
+                        passwordError.textContent = result.errors.password[0];
+                        passwordError.classList.remove('hidden');
+                    }
+                    if (result.errors.name) {
+                        const nameError = document.getElementById('nameError');
+                        nameError.textContent = result.errors.name[0];
+                        nameError.classList.remove('hidden');
+                    }
+                    if (result.errors.phone) {
+                        const phoneError = document.getElementById('phoneError');
+                        phoneError.textContent = result.errors.phone[0];
+                        phoneError.classList.remove('hidden');
+                    }
+                } else {
+                    showError(errorMessage);
+                }
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            showError('Connection error. Please check if the backend is running and try again.');
+        } finally {
+            document.getElementById('loadingSpinner').classList.add('hidden');
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').textContent = 'Create Account';
+        }
+    });
 
     // Add focus effect to inputs
     const inputs = document.querySelectorAll('input');
