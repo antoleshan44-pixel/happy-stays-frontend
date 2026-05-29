@@ -115,7 +115,7 @@
         </div>
     </div>
 
-    <!-- Right Side - Registration Form (Compact - No Scroll) -->
+    <!-- Right Side - Registration Form -->
     <div class="w-full lg:w-1/2 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center px-6 py-6 overflow-y-auto">
         <div class="max-w-md w-full">
             <div class="text-center mb-6 lg:hidden">
@@ -133,7 +133,7 @@
                     <p class="text-on-surface-variant text-xs mt-1">Join the architectural community</p>
                 </div>
 
-                <!-- Display Validation Errors -->
+                <!-- Error Container -->
                 <div id="errorContainer" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                     <div class="flex items-start gap-2">
                         <span class="material-symbols-outlined text-red-600 text-sm">error</span>
@@ -152,9 +152,8 @@
                     </div>
                 </div>
 
-                <!-- Registration Form - Direct API Call -->
+                <!-- Registration Form -->
                 <form id="registerForm" method="POST">
-
                     <!-- Full Name -->
                     <div class="mb-3">
                         <div class="input-group relative">
@@ -265,7 +264,7 @@
     </div>
 </div>
 
-<!-- Loading Spinner (hidden by default) -->
+<!-- Loading Spinner -->
 <div id="loadingSpinner" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 flex flex-col items-center">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-3"></div>
@@ -274,8 +273,8 @@
 </div>
 
 <script>
-    // Get the backend API URL from environment or use default
-    const BACKEND_API_URL = '{{ env("SPRING_BOOT_API_URL", "https://happy-stays-backend.onrender.com") }}';
+    // FIXED: Correct backend URL
+    const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -290,7 +289,6 @@
         }
     }
 
-    // Helper function to show errors
     function showError(message) {
         const errorContainer = document.getElementById('errorContainer');
         const errorList = document.getElementById('errorList');
@@ -301,7 +299,6 @@
         }, 5000);
     }
 
-    // Helper function to show success
     function showSuccess(message) {
         const successContainer = document.getElementById('successContainer');
         const successMessage = document.getElementById('successMessage');
@@ -309,7 +306,7 @@
         successContainer.classList.remove('hidden');
     }
 
-    // Handle form submission to Spring Boot API
+    // Handle form submission
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -321,22 +318,26 @@
         });
 
         // Get form data
-        const formData = {
-            name: document.getElementById('name').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
-            password: document.getElementById('password').value,
-            role: document.querySelector('input[name="role"]:checked').value,
-            password_confirmation: document.getElementById('password_confirmation').value
-        };
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('password_confirmation').value;
 
         // Validate passwords match
-        if (formData.password !== formData.password_confirmation) {
+        if (password !== confirmPassword) {
             const passwordError = document.getElementById('passwordError');
             passwordError.textContent = 'Passwords do not match';
             passwordError.classList.remove('hidden');
             return;
         }
+
+        // FIXED: Send confirmPassword (camelCase) not password_confirmation
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            password: password,
+            confirmPassword: confirmPassword,  // KEY FIX - backend expects this exact field name
+            role: document.querySelector('input[name="role"]:checked').value
+        };
 
         // Validate password length
         if (formData.password.length < 6) {
@@ -366,29 +367,19 @@
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    name: formData.name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    password: formData.password,
-                    role: formData.role
-                })
+                body: JSON.stringify(formData)
             });
 
             const result = await response.json();
 
             if (response.ok && result.token) {
-                // Store token and user data
+                // Store token
                 localStorage.setItem('api_token', result.token);
                 localStorage.setItem('user', JSON.stringify(result.user || result));
-
-                // Also store in session for server-side access
                 sessionStorage.setItem('api_token', result.token);
 
-                // Show success message
-                showSuccess('Account created successfully! Redirecting to dashboard...');
+                showSuccess('Account created successfully! Redirecting...');
 
-                // Redirect based on role after 2 seconds
                 setTimeout(() => {
                     if (formData.role === 'OWNER') {
                         window.location.href = '/owner/dashboard';
@@ -397,30 +388,20 @@
                     }
                 }, 2000);
             } else {
-                // Show error message from API
                 const errorMessage = result.message || result.error || 'Registration failed. Please try again.';
 
-                // Check for field-specific errors
                 if (result.errors) {
                     if (result.errors.email) {
-                        const emailError = document.getElementById('emailError');
-                        emailError.textContent = result.errors.email[0];
-                        emailError.classList.remove('hidden');
+                        document.getElementById('emailError').textContent = result.errors.email[0];
+                        document.getElementById('emailError').classList.remove('hidden');
                     }
                     if (result.errors.password) {
-                        const passwordError = document.getElementById('passwordError');
-                        passwordError.textContent = result.errors.password[0];
-                        passwordError.classList.remove('hidden');
+                        document.getElementById('passwordError').textContent = result.errors.password[0];
+                        document.getElementById('passwordError').classList.remove('hidden');
                     }
                     if (result.errors.name) {
-                        const nameError = document.getElementById('nameError');
-                        nameError.textContent = result.errors.name[0];
-                        nameError.classList.remove('hidden');
-                    }
-                    if (result.errors.phone) {
-                        const phoneError = document.getElementById('phoneError');
-                        phoneError.textContent = result.errors.phone[0];
-                        phoneError.classList.remove('hidden');
+                        document.getElementById('nameError').textContent = result.errors.name[0];
+                        document.getElementById('nameError').classList.remove('hidden');
                     }
                 } else {
                     showError(errorMessage);
@@ -428,7 +409,7 @@
             }
         } catch (error) {
             console.error('Registration error:', error);
-            showError('Connection error. Please check if the backend is running and try again.');
+            showError('Connection error. Please try again.');
         } finally {
             document.getElementById('loadingSpinner').classList.add('hidden');
             document.getElementById('submitBtn').disabled = false;
@@ -436,7 +417,7 @@
         }
     });
 
-    // Add focus effect to inputs
+    // Add focus effect
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
