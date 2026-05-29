@@ -1,4 +1,3 @@
-<!-- File: resources/views/auth/login.blade.php -->
 <!DOCTYPE html>
 <html class="light" lang="en">
 <head>
@@ -48,7 +47,6 @@
             background-size: cover;
             background-position: center;
         }
-        /* Prevent scrolling on body */
         body {
             overflow: hidden;
             height: 100vh;
@@ -57,7 +55,6 @@
 </head>
 <body class="font-body">
 
-<!-- Split Screen Layout - No Scroll -->
 <div class="flex h-screen">
     <!-- Left Side - Hero Section -->
     <div class="hidden lg:flex lg:w-1/2 hero-section relative">
@@ -99,7 +96,7 @@
         </div>
     </div>
 
-    <!-- Right Side - Login Form (Compact - No Scroll) -->
+    <!-- Right Side - Login Form -->
     <div class="w-full lg:w-1/2 bg-gradient-to-br from-gray-50 to-white flex items-center justify-center px-6 py-6 overflow-y-auto">
         <div class="max-w-md w-full">
             <div class="text-center mb-6 lg:hidden">
@@ -108,7 +105,6 @@
             </div>
 
             <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6">
-                <!-- Decorative Header -->
                 <div class="text-center mb-5">
                     <div class="w-14 h-14 bg-gradient-to-br from-primary to-primary-container rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
                         <span class="material-symbols-outlined text-white text-2xl">login</span>
@@ -128,7 +124,7 @@
                     </div>
                 </div>
 
-                <!-- Success Message (from registration) -->
+                <!-- Success Message -->
                 <div id="successContainer" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
@@ -136,10 +132,8 @@
                     </div>
                 </div>
 
-                <!-- Login Form - Direct API Call -->
+                <!-- Login Form -->
                 <form id="loginForm" method="POST">
-
-                    <!-- Email Field -->
                     <div class="mb-4">
                         <div class="input-group relative">
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
@@ -147,12 +141,10 @@
                             </span>
                             <input type="email" name="email" id="email" required
                                    class="w-full pl-10 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                                   placeholder="Email Address"
-                                   autofocus>
+                                   placeholder="Email Address" autofocus>
                         </div>
                     </div>
 
-                    <!-- Password Field -->
                     <div class="mb-4">
                         <div class="input-group relative">
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
@@ -167,7 +159,6 @@
                         </div>
                     </div>
 
-                    <!-- Remember Me & Forgot Password -->
                     <div class="flex items-center justify-between mb-6">
                         <label class="flex items-center cursor-pointer">
                             <input type="checkbox" name="remember" id="remember" class="w-3 h-3 text-primary rounded">
@@ -176,12 +167,10 @@
                         <a href="#" class="text-xs text-primary hover:underline">Forgot password?</a>
                     </div>
 
-                    <!-- Submit Button -->
                     <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-primary to-primary-container text-white py-2.5 rounded-lg font-semibold text-sm hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
                         Sign In
                     </button>
 
-                    <!-- Divider -->
                     <div class="relative my-6">
                         <div class="absolute inset-0 flex items-center">
                             <div class="w-full border-t border-gray-200"></div>
@@ -191,7 +180,6 @@
                         </div>
                     </div>
 
-                    <!-- Social Login Buttons -->
                     <div class="grid grid-cols-2 gap-3 mb-6">
                         <button type="button" class="flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                             <svg class="w-4 h-4" viewBox="0 0 24 24">
@@ -210,7 +198,6 @@
                         </button>
                     </div>
 
-                    <!-- Register Link -->
                     <div class="text-center">
                         <p class="text-xs text-gray-600">
                             Don't have an account?
@@ -232,8 +219,8 @@
 </div>
 
 <script>
-    // Get the backend API URL from environment or use default
-    const BACKEND_API_URL = '{{ env("SPRING_BOOT_API_URL", "https://happy-stays-backend.onrender.com") }}';
+    // FIXED: Correct backend URL with -1
+    const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -248,7 +235,6 @@
         }
     }
 
-    // Helper function to show error
     function showError(message) {
         const errorContainer = document.getElementById('errorContainer');
         const errorMessage = document.getElementById('errorMessage');
@@ -259,7 +245,6 @@
         }, 5000);
     }
 
-    // Helper function to show success
     function showSuccess(message) {
         const successContainer = document.getElementById('successContainer');
         const successMessage = document.getElementById('successMessage');
@@ -267,25 +252,20 @@
         successContainer.classList.remove('hidden');
     }
 
-    // Handle form submission to Spring Boot API
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Clear previous errors
         document.getElementById('errorContainer').classList.add('hidden');
 
-        // Get form data
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
 
-        // Validate inputs
         if (!email || !password) {
             showError('Please enter both email and password');
             return;
         }
 
-        // Show loading spinner
         document.getElementById('loadingSpinner').classList.remove('hidden');
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('submitBtn').textContent = 'Signing in...';
@@ -306,7 +286,6 @@
             const result = await response.json();
 
             if (response.ok && result.token) {
-                // Store token and user data
                 if (remember) {
                     localStorage.setItem('api_token', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user || result));
@@ -315,15 +294,10 @@
                     sessionStorage.setItem('user', JSON.stringify(result.user || result));
                 }
 
-                // Also store in session for server-side access
-                sessionStorage.setItem('api_token', result.token);
+                showSuccess('Login successful! Redirecting...');
 
-                // Show success message
-                showSuccess('Login successful! Redirecting to dashboard...');
-
-                // Redirect based on user role after 2 seconds
                 setTimeout(() => {
-                    const userRole = (result.user?.role || result.role || '').toUpperCase();
+                    const userRole = ((result.user?.role || result.role || '').toUpperCase());
                     if (userRole === 'OWNER') {
                         window.location.href = '/owner/dashboard';
                     } else if (userRole === 'ADMIN') {
@@ -333,13 +307,12 @@
                     }
                 }, 1500);
             } else {
-                // Show error message from API
                 const errorMessage = result.message || result.error || 'Invalid email or password';
                 showError(errorMessage);
             }
         } catch (error) {
             console.error('Login error:', error);
-            showError('Connection error. Please check if the backend is running and try again.');
+            showError('Connection error. Please try again.');
         } finally {
             document.getElementById('loadingSpinner').classList.add('hidden');
             document.getElementById('submitBtn').disabled = false;
@@ -347,7 +320,6 @@
         }
     });
 
-    // Add focus effect to inputs
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
@@ -358,8 +330,6 @@
         });
     });
 
-    // Check if user was redirected from registration with success message
-    const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('registered') === 'success') {
         showSuccess('Account created successfully! Please sign in.');
     }
