@@ -222,7 +222,7 @@
     // FIXED: Correct backend URL with -1
     const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
 
-    // Get URL parameters for success message (FIXED: urlParams was not defined)
+    // Get URL parameters for success message (declared ONCE)
     const urlParams = new URLSearchParams(window.location.search);
 
     function togglePassword() {
