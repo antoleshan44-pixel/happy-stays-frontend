@@ -222,6 +222,9 @@
     // FIXED: Correct backend URL with -1
     const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
 
+    // Get URL parameters for success message (FIXED: urlParams was not defined)
+    const urlParams = new URLSearchParams(window.location.search);
+
     function togglePassword() {
         const passwordInput = document.getElementById('password');
         const toggleIcon = document.getElementById('toggleIcon');
@@ -252,6 +255,7 @@
         successContainer.classList.remove('hidden');
     }
 
+    // Handle form submission
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -320,6 +324,7 @@
         }
     });
 
+    // Add focus effect to inputs
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
@@ -330,6 +335,7 @@
         });
     });
 
+    // Show success message if coming from registration page
     if (urlParams.get('registered') === 'success') {
         showSuccess('Account created successfully! Please sign in.');
     }
