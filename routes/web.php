@@ -13,11 +13,24 @@ use App\Http\Controllers\PriceAlertController;
 use App\Http\Controllers\HostCalendarController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ReferralController;
-use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\PhotoController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Artisan;
+
+// ============================================
+// CACHE CLEAR ROUTE (Temporary - Remove after everything works)
+// ============================================
+Route::get('/clear-cache', function() {
+    try {
+        Artisan::call('cache:clear');
+        Artisan::call('config:clear');
+        Artisan::call('view:clear');
+        Artisan::call('route:clear');
+        return "✅ Cache cleared successfully!";
+    } catch (\Exception $e) {
+        return "❌ Error clearing cache: " . $e->getMessage();
+    }
+});
 
 // ============================================
 // PUBLIC ROUTES (No login required)
@@ -30,11 +43,9 @@ Route::get('/', function () {
 // About Us Page
 Route::view('/about', 'about')->name('about.us');
 
-// Regular User Auth Routes
+// Regular User Auth Routes (Only for displaying forms - POST handled by direct API)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ============================================
@@ -148,6 +159,7 @@ Route::prefix('customer')->middleware(['spring.auth'])->group(function () {
     // Referral Routes
     Route::get('/referrals', [ReferralController::class, 'index'])->name('customer.referrals');
 });
+
 // ============================================
 // OWNER ROUTES (Requires Spring Boot authentication)
 // ============================================
@@ -177,17 +189,16 @@ Route::prefix('owner')->middleware(['spring.auth'])->group(function () {
     Route::get('/earnings',        [OwnerController::class, 'earnings'])->name('owner.earnings');
     Route::get('/earnings/export', [OwnerController::class, 'exportEarnings'])->name('owner.earnings.export');
 
-    // Photo Management — UPDATED to use OwnerController
+    // Photo Management
     Route::get('/property/{id}/photos',                           [PhotoController::class, 'index'])->name('owner.property.photos');
     Route::post('/property/{id}/photos/upload',                   [PhotoController::class, 'upload'])->name('owner.property.upload');
     Route::post('/property/{propertyId}/upload-all',              [OwnerController::class, 'uploadAllMedia'])->name('owner.property.upload.all');
 
-    // ✅ UPDATED: These now point to OwnerController (not PhotoController)
     Route::delete('/property/{propertyId}/photos/{photoId}',      [OwnerController::class, 'deletePhoto'])->name('owner.photo.delete');
     Route::put('/property/{propertyId}/photos/{photoId}/primary', [OwnerController::class, 'setPrimaryPhoto'])->name('owner.photo.primary');
     Route::post('/property/{id}/photos/reorder',                  [PhotoController::class, 'reorder'])->name('owner.photos.reorder');
 
-    // Video Management — handled by OwnerController
+    // Video Management
     Route::get('/property/{id}/videos',                                [OwnerController::class, 'manageVideos'])->name('owner.videos.manage');
     Route::post('/property/{id}/video/upload',                         [OwnerController::class, 'uploadVideo'])->name('owner.video.upload');
     Route::delete('/property/{propertyId}/video/{videoId}',            [OwnerController::class, 'deleteVideo'])->name('owner.video.delete');
@@ -259,50 +270,8 @@ Route::prefix('admin')->middleware([\App\Http\Middleware\AdminAuth::class])->gro
 });
 
 // ============================================
-// DEBUG / TEST ROUTES (Remove in production)
-// ============================================
-
-// Test route to check pending properties API directly
-Route::get('/test-pending-api', function() {
-    try {
-        $response = Illuminate\Support\Facades\Http::withHeaders([
-            'Authorization' => 'Bearer ' . session('admin_api_token'),
-            'Accept' => 'application/json',
-        ])->timeout(30)->get('http://localhost:8080/api/admin/properties/pending');
-
-        return response()->json([
-            'status' => $response->status(),
-            'successful' => $response->successful(),
-            'body_preview' => substr($response->body(), 0, 500),
-            'json' => $response->json(),
-            'token_exists' => session()->has('admin_api_token'),
-            'token_preview' => session('admin_api_token') ? substr(session('admin_api_token'), 0, 50) . '...' : null,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'token_exists' => session()->has('admin_api_token'),
-        ]);
-    }
-})->middleware('admin.auth');
-
-// Test route to check admin session
-Route::get('/test-admin-session', function() {
-    return response()->json([
-        'admin_logged_in' => session()->has('admin_logged_in'),
-        'admin_id' => session('admin_id'),
-        'admin_role' => session('admin_role'),
-        'admin_token_exists' => session()->has('admin_api_token'),
-        'admin_name' => session('admin_name'),
-        'session_id' => session()->getId(),
-    ]);
-})->middleware('admin.auth');
-
-// ============================================
 // PAYMENT ROUTES
 // ============================================
-
-// IMPORTANT: GET routes must come before POST routes to avoid conflicts
 
 Route::get('/payment/mpesa/{bookingId}',          [PaymentController::class, 'initiatePayment'])->name('payment.mpesa');
 Route::get('/payment/status/{id}',                [PaymentController::class, 'paymentStatus'])->name('payment.status');
@@ -323,221 +292,3 @@ Route::get('/api/properties/{propertyId}/upcoming-bookings',[HostCalendarControl
 // ============================================
 
 Route::post('/price-alert/store', [PriceAlertController::class, 'store'])->name('price.alert.store');
-
-// ============================================
-// DEBUG ROUTES (Remove in production)
-// ============================================
-
-Route::get('/debug-spring-boot', function () {
-    $api     = app(App\Services\SpringBootApiService::class);
-    $results = [];
-
-    try {
-        $properties = $api->getProperties();
-        $results['get_properties'] = [
-            'success' => true,
-            'count'   => count($properties),
-            'sample'  => count($properties) > 0 ? array_slice($properties, 0, 1) : null,
-        ];
-    } catch (\Exception $e) {
-        $results['get_properties'] = [
-            'success' => false,
-            'error'   => $e->getMessage(),
-        ];
-    }
-
-    $results['auth'] = [
-        'has_token'     => session()->has('api_token'),
-        'has_user'      => session()->has('user'),
-        'user'          => session('user'),
-        'token_preview' => session('api_token') ? substr(session('api_token'), 0, 20) . '...' : null,
-    ];
-
-    $results['config'] = [
-        'api_url' => env('SPRING_BOOT_API_URL', 'http://localhost:8080/api'),
-        'app_url' => env('APP_URL', 'http://localhost:8000'),
-        'env'     => app()->environment(),
-    ];
-
-    return response()->json($results);
-});
-
-Route::post('/debug-booking-test/{propertyId}', function (Request $request, $propertyId) {
-    $api = app(App\Services\SpringBootApiService::class);
-
-    $testData = [
-        'propertyId'   => (int) $propertyId,
-        'checkInDate'  => $request->input('check_in_date', date('Y-m-d', strtotime('+7 days'))),
-        'checkOutDate' => $request->input('check_out_date', date('Y-m-d', strtotime('+10 days'))),
-        'guests'       => (int) $request->input('guests', 2),
-    ];
-
-    Log::info('Debug booking test', ['test_data' => $testData]);
-
-    $result = $api->createBooking($testData);
-
-    return response()->json([
-        'test_data'    => $testData,
-        'result'       => $result,
-        'session_info' => [
-            'has_token' => session()->has('api_token'),
-            'user'      => session('user'),
-        ],
-    ]);
-})->middleware('spring.auth');
-
-Route::get('/check-api', function () {
-    $apiUrl = env('SPRING_BOOT_API_URL', 'http://localhost:8080/api');
-
-    try {
-        $ch = curl_init($apiUrl . '/properties/approved');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return response()->json([
-            'api_url'          => $apiUrl,
-            'status_code'      => $httpCode,
-            'reachable'        => $httpCode > 0,
-            'response_preview' => $response ? substr($response, 0, 200) : null,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'api_url'   => $apiUrl,
-            'reachable' => false,
-            'error'     => $e->getMessage(),
-        ]);
-    }
-});
-
-// ============================================
-// ADDITIONAL DEBUG ROUTES FOR AUTHENTICATION
-// ============================================
-
-// Debug route to check authentication token status
-Route::get('/debug-token', function () {
-    $token = session('api_token');
-    $user = session('user');
-
-    if (!$token) {
-        return response()->json([
-            'authenticated' => false,
-            'message' => 'No token found in session',
-            'user' => $user,
-            'session_id' => session()->getId()
-        ]);
-    }
-
-    try {
-        $response = Illuminate\Support\Facades\Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json',
-        ])->timeout(10)->get('http://localhost:8080/api/owner/properties');
-
-        return response()->json([
-            'authenticated' => true,
-            'has_token' => !empty($token),
-            'token_preview' => substr($token, 0, 30) . '...',
-            'token_length' => strlen($token),
-            'user' => $user,
-            'user_role' => $user['role'] ?? null,
-            'session_id' => session()->getId(),
-            'test_api_response' => [
-                'status' => $response->status(),
-                'successful' => $response->successful(),
-                'body' => $response->body(),
-            ]
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'authenticated' => true,
-            'has_token' => !empty($token),
-            'token_preview' => substr($token, 0, 30) . '...',
-            'user' => $user,
-            'error' => $e->getMessage()
-        ]);
-    }
-})->middleware('spring.auth');
-
-// Debug route to check user details
-Route::get('/debug-user', function () {
-    $user = session('user');
-    $token = session('api_token');
-
-    return response()->json([
-        'user' => $user,
-        'user_role' => $user['role'] ?? null,
-        'user_id' => $user['id'] ?? null,
-        'user_email' => $user['email'] ?? null,
-        'has_token' => !empty($token),
-        'session_id' => session()->getId(),
-        'all_session_data' => session()->all()
-    ]);
-})->middleware('spring.auth');
-
-// Debug route to test direct API call
-Route::get('/debug-api-test', function () {
-    $token = session('api_token');
-
-    if (!$token) {
-        return response()->json(['error' => 'No token found'], 401);
-    }
-
-    try {
-        // Test GET request
-        $getResponse = Illuminate\Support\Facades\Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json',
-        ])->timeout(10)->get('http://localhost:8080/api/owner/properties');
-
-        // Test POST request (without file) to check if endpoint exists
-        $postResponse = Illuminate\Support\Facades\Http::withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-            'Accept' => 'application/json',
-        ])->timeout(10)->post('http://localhost:8080/api/owner/properties/17/videos', [
-            'test' => 'connection'
-        ]);
-
-        return response()->json([
-            'token_valid' => true,
-            'get_request' => [
-                'status' => $getResponse->status(),
-                'successful' => $getResponse->successful(),
-                'body' => $getResponse->body(),
-            ],
-            'post_request' => [
-                'status' => $postResponse->status(),
-                'successful' => $postResponse->successful(),
-                'body' => $postResponse->body(),
-            ]
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'token_valid' => true,
-            'error' => $e->getMessage()
-        ]);
-    }
-})->middleware('spring.auth');
-
-// ============================================
-// TEST ROUTE - Isolate the property data issue
-// ============================================
-
-Route::get('/test-property/{id}', function ($id) {
-    $api = app(App\Services\SpringBootApiService::class);
-    $property = $api->getProperty($id, true);
-
-    return response()->json([
-        'success' => true,
-        'type' => gettype($property),
-        'is_array' => is_array($property),
-        'keys' => is_array($property) ? array_keys($property) : null,
-        'has_title' => isset($property['title']),
-        'title' => $property['title'] ?? null,
-        'has_id' => isset($property['id']),
-        'id' => $property['id'] ?? null,
-        'property_preview' => $property ? array_slice($property, 0, 10) : null
-    ]);
-})->middleware('spring.auth');
