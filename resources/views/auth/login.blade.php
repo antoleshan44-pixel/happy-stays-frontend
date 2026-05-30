@@ -219,10 +219,10 @@
 </div>
 
 <script>
-    // FIXED: Correct backend URL with -1
+    // Backend API URL
     const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
 
-    // Get URL parameters for success message (declared ONCE)
+    // Get URL parameters for success message
     const urlParams = new URLSearchParams(window.location.search);
 
     function togglePassword() {
@@ -290,6 +290,7 @@
             const result = await response.json();
 
             if (response.ok && result.token) {
+                // Store token and user data
                 if (remember) {
                     localStorage.setItem('api_token', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user || result));
@@ -300,14 +301,23 @@
 
                 showSuccess('Login successful! Redirecting...');
 
+                // Get user role and redirect accordingly
+                const userData = result.user || result;
+                const userRole = (userData.role || '').toUpperCase();
+                
+                console.log('User role detected:', userRole); // For debugging
+                
                 setTimeout(() => {
-                    const userRole = ((result.user?.role || result.role || '').toUpperCase());
+                    // Role-based redirection matching Laravel routes
                     if (userRole === 'OWNER') {
                         window.location.href = '/owner/dashboard';
                     } else if (userRole === 'ADMIN') {
                         window.location.href = '/admin/dashboard';
+                    } else if (userRole === 'CUSTOMER') {
+                        window.location.href = '/customer/dashboard';
                     } else {
-                        window.location.href = '/';
+                        // Default fallback for authenticated users
+                        window.location.href = '/home';
                     }
                 }, 1500);
             } else {
