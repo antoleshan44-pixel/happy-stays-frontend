@@ -51,6 +51,22 @@
             overflow: hidden;
             height: 100vh;
         }
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #000;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            z-index: 9999;
+            max-width: 300px;
+            max-height: 200px;
+            overflow: auto;
+            display: none;
+        }
     </style>
 </head>
 <body class="font-body">
@@ -133,7 +149,7 @@
                 </div>
 
                 <!-- Login Form -->
-                <form id="loginForm" method="POST">
+                <form id="loginForm" action="javascript:void(0);" method="POST">
                     <div class="mb-4">
                         <div class="input-group relative">
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
@@ -210,6 +226,12 @@
     </div>
 </div>
 
+<!-- Debug Panel -->
+<div id="debugPanel" class="debug-panel">
+    <strong>Debug Log:</strong><br>
+    <div id="debugLog"></div>
+</div>
+
 <!-- Loading Spinner -->
 <div id="loadingSpinner" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 flex flex-col items-center">
@@ -219,11 +241,30 @@
 </div>
 
 <script>
-    // FIXED: Correct backend URL with -1
-    const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
+    // Toggle debug panel with Ctrl+Shift+D
+    let debugEnabled = false;
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+            debugEnabled = !debugEnabled;
+            document.getElementById('debugPanel').style.display = debugEnabled ? 'block' : 'none';
+            addDebugLog('Debug mode ' + (debugEnabled ? 'enabled' : 'disabled'));
+        }
+    });
 
-    // Get URL parameters for success message (declared ONCE)
+    function addDebugLog(message) {
+        if (!debugEnabled) return;
+        const debugLog = document.getElementById('debugLog');
+        const timestamp = new Date().toLocaleTimeString();
+        debugLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+        debugLog.scrollTop = debugLog.scrollHeight;
+        console.log(message);
+    }
+
+    const BACKEND_API_URL = 'https://happy-stays-backend-1.onrender.com';
     const urlParams = new URLSearchParams(window.location.search);
+
+    addDebugLog('Login page loaded');
+    addDebugLog(`Backend API URL: ${BACKEND_API_URL}`);
 
     function togglePassword() {
         const passwordInput = document.getElementById('password');
@@ -243,6 +284,7 @@
         const errorMessage = document.getElementById('errorMessage');
         errorMessage.textContent = message;
         errorContainer.classList.remove('hidden');
+        addDebugLog(`ERROR: ${message}`);
         setTimeout(() => {
             errorContainer.classList.add('hidden');
         }, 5000);
@@ -253,19 +295,25 @@
         const successMessage = document.getElementById('successMessage');
         successMessage.textContent = message;
         successContainer.classList.remove('hidden');
+        addDebugLog(`SUCCESS: ${message}`);
     }
 
-    // Handle form submission
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-
+        e.stopPropagation();
+        
+        addDebugLog('Form submission intercepted');
+        
         document.getElementById('errorContainer').classList.add('hidden');
 
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
 
+        addDebugLog(`Email: ${email}, Password length: ${password.length}, Remember: ${remember}`);
+
         if (!email || !password) {
+            addDebugLog('Validation failed: missing credentials');
             showError('Please enter both email and password');
             return;
         }
@@ -275,6 +323,8 @@
         document.getElementById('submitBtn').textContent = 'Signing in...';
 
         try {
+            addDebugLog(`Sending POST to: ${BACKEND_API_URL}/api/auth/login`);
+            
             const response = await fetch(`${BACKEND_API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -287,36 +337,50 @@
                 })
             });
 
+            addDebugLog(`Response status: ${response.status} ${response.statusText}`);
+            
             const result = await response.json();
+            addDebugLog(`Response data: ${JSON.stringify(result, null, 2)}`);
 
             if (response.ok && result.token) {
+                addDebugLog('Login successful! Token received');
+                
                 if (remember) {
                     localStorage.setItem('api_token', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user || result));
+                    addDebugLog('Stored credentials in localStorage');
                 } else {
                     sessionStorage.setItem('api_token', result.token);
                     sessionStorage.setItem('user', JSON.stringify(result.user || result));
+                    addDebugLog('Stored credentials in sessionStorage');
                 }
 
                 showSuccess('Login successful! Redirecting...');
 
+                const userRole = ((result.user?.role || result.role || '').toUpperCase());
+                addDebugLog(`User role detected: ${userRole}`);
+                
                 setTimeout(() => {
-                    const userRole = ((result.user?.role || result.role || '').toUpperCase());
+                    let redirectUrl = '/home';
                     if (userRole === 'OWNER') {
-                        window.location.href = '/owner/dashboard';
+                        redirectUrl = '/owner/dashboard';
                     } else if (userRole === 'ADMIN') {
-                        window.location.href = '/admin/dashboard';
+                        redirectUrl = '/admin/dashboard';
                     } else {
-                        window.location.href = '/';
+                        redirectUrl = '/home';
                     }
+                    addDebugLog(`Redirecting to: ${redirectUrl}`);
+                    window.location.href = redirectUrl;
                 }, 1500);
             } else {
                 const errorMessage = result.message || result.error || 'Invalid email or password';
+                addDebugLog(`Login failed: ${errorMessage}`);
                 showError(errorMessage);
             }
         } catch (error) {
+            addDebugLog(`EXCEPTION: ${error.message}`);
             console.error('Login error:', error);
-            showError('Connection error. Please try again.');
+            showError('Connection error: ' + error.message);
         } finally {
             document.getElementById('loadingSpinner').classList.add('hidden');
             document.getElementById('submitBtn').disabled = false;
@@ -324,7 +388,6 @@
         }
     });
 
-    // Add focus effect to inputs
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => {
         input.addEventListener('focus', function() {
@@ -335,10 +398,12 @@
         });
     });
 
-    // Show success message if coming from registration page
     if (urlParams.get('registered') === 'success') {
         showSuccess('Account created successfully! Please sign in.');
+        addDebugLog('Registration success detected');
     }
+    
+    addDebugLog('Script initialization complete');
 </script>
 
 </body>
