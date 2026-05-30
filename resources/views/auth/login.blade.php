@@ -132,8 +132,8 @@
                     </div>
                 </div>
 
-                <!-- Login Form -->
-                <form id="loginForm" method="POST">
+                <!-- Login Form - FIXED: Added action="javascript:void(0);" -->
+                <form id="loginForm" action="javascript:void(0);" method="POST">
                     <div class="mb-4">
                         <div class="input-group relative">
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-outline">
@@ -255,17 +255,24 @@
         successContainer.classList.remove('hidden');
     }
 
-    // Handle form submission
+    // Handle form submission - FIXED: Added debug logging
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-
+        e.stopPropagation();
+        
+        console.log('Form submitted - preventing default');
+        
         document.getElementById('errorContainer').classList.add('hidden');
 
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const remember = document.getElementById('remember').checked;
 
+        console.log('Email entered:', email);
+        console.log('Password length:', password.length);
+
         if (!email || !password) {
+            console.log('Validation failed: missing email or password');
             showError('Please enter both email and password');
             return;
         }
@@ -275,6 +282,8 @@
         document.getElementById('submitBtn').textContent = 'Signing in...';
 
         try {
+            console.log('Sending login request to:', `${BACKEND_API_URL}/api/auth/login`);
+            
             const response = await fetch(`${BACKEND_API_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -287,9 +296,14 @@
                 })
             });
 
+            console.log('Response status:', response.status);
+            
             const result = await response.json();
+            console.log('Response data:', result);
 
             if (response.ok && result.token) {
+                console.log('Login successful, storing token');
+                
                 if (remember) {
                     localStorage.setItem('api_token', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user || result));
@@ -302,21 +316,27 @@
 
                 setTimeout(() => {
                     const userRole = ((result.user?.role || result.role || '').toUpperCase());
+                    console.log('User role:', userRole);
+                    
                     if (userRole === 'OWNER') {
+                        console.log('Redirecting to /owner/dashboard');
                         window.location.href = '/owner/dashboard';
                     } else if (userRole === 'ADMIN') {
+                        console.log('Redirecting to /admin/dashboard');
                         window.location.href = '/admin/dashboard';
                     } else {
+                        console.log('Redirecting to /home');
                         window.location.href = '/home';
                     }
                 }, 1500);
             } else {
                 const errorMessage = result.message || result.error || 'Invalid email or password';
+                console.log('Login failed:', errorMessage);
                 showError(errorMessage);
             }
         } catch (error) {
             console.error('Login error:', error);
-            showError('Connection error. Please try again.');
+            showError('Connection error. Please try again. Check console for details.');
         } finally {
             document.getElementById('loadingSpinner').classList.add('hidden');
             document.getElementById('submitBtn').disabled = false;
@@ -339,6 +359,9 @@
     if (urlParams.get('registered') === 'success') {
         showSuccess('Account created successfully! Please sign in.');
     }
+    
+    // Debug: Check if script loaded
+    console.log('Login page script loaded successfully');
 </script>
 
 </body>
