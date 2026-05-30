@@ -323,6 +323,7 @@
         document.getElementById('submitBtn').textContent = 'Signing in...';
 
         try {
+            // Step 1: Authenticate with Spring Boot backend
             addDebugLog(`Sending POST to: ${BACKEND_API_URL}/api/auth/login`);
             
             const response = await fetch(`${BACKEND_API_URL}/api/auth/login`, {
@@ -345,6 +346,7 @@
             if (response.ok && result.token) {
                 addDebugLog('Login successful! Token received');
                 
+                // Step 2: Store token in localStorage/sessionStorage (for frontend)
                 if (remember) {
                     localStorage.setItem('api_token', result.token);
                     localStorage.setItem('user', JSON.stringify(result.user || result));
@@ -355,23 +357,50 @@
                     addDebugLog('Stored credentials in sessionStorage');
                 }
 
-                showSuccess('Login successful! Redirecting...');
-
-                const userRole = ((result.user?.role || result.role || '').toUpperCase());
-                addDebugLog(`User role detected: ${userRole}`);
+                // Step 3: Send token to Laravel to establish session
+                addDebugLog('Sending token to Laravel to establish session...');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
                 
-                setTimeout(() => {
-                    let redirectUrl = '/home';
-                    if (userRole === 'OWNER') {
-                        redirectUrl = '/owner/dashboard';
-                    } else if (userRole === 'ADMIN') {
-                        redirectUrl = '/admin/dashboard';
-                    } else {
-                        redirectUrl = '/home';
-                    }
-                    addDebugLog(`Redirecting to: ${redirectUrl}`);
-                    window.location.href = redirectUrl;
-                }, 1500);
+                const laravelResponse = await fetch('/api/set-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        token: result.token,
+                        user: result.user || result,
+                        remember: remember
+                    })
+                });
+
+                const laravelResult = await laravelResponse.json();
+                addDebugLog(`Laravel session response: ${JSON.stringify(laravelResult)}`);
+
+                if (laravelResponse.ok && laravelResult.success) {
+                    showSuccess('Login successful! Redirecting...');
+
+                    // Step 4: Redirect based on role
+                    const userRole = ((result.user?.role || result.role || '').toUpperCase());
+                    addDebugLog(`User role detected: ${userRole}`);
+                    
+                    setTimeout(() => {
+                        let redirectUrl = '/home';
+                        if (userRole === 'OWNER') {
+                            redirectUrl = '/owner/dashboard';
+                        } else if (userRole === 'ADMIN') {
+                            redirectUrl = '/admin/dashboard';
+                        } else {
+                            redirectUrl = '/home';
+                        }
+                        addDebugLog(`Redirecting to: ${redirectUrl}`);
+                        window.location.href = redirectUrl;
+                    }, 1500);
+                } else {
+                    const errorMessage = laravelResult.message || 'Failed to establish session';
+                    addDebugLog(`Laravel session error: ${errorMessage}`);
+                    showError(errorMessage);
+                }
             } else {
                 const errorMessage = result.message || result.error || 'Invalid email or password';
                 addDebugLog(`Login failed: ${errorMessage}`);
