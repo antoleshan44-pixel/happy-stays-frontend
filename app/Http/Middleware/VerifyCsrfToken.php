@@ -15,5 +15,6 @@ class VerifyCsrfToken extends Middleware
         '/mpesa/callback',           // M-Pesa callback endpoint
         '/payment/mpesa/*/process',  // Payment processing routes (if needed)
         '/webhook/*',                // Any future webhooks
+        '/api/set-token',            // API endpoint for setting JWT token from frontend login
     ];
 }
